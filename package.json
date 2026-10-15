@@ -1,0 +1,11 @@
+{
+  "name": "opencode-hindsight",
+  "version": "0.1.0",
+  "description": "OpenCode plugin: episodic memory backed by a Hindsight server, one bank per project",
+  "type": "module",
+  "license": "MIT",
+  "main": "index.ts",
+  "devDependencies": {
+    "@opencode/plugin": "latest"
+  }
+}
