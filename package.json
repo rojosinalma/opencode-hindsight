@@ -2,10 +2,24 @@
   "name": "opencode-hindsight",
   "version": "0.1.0",
   "description": "OpenCode plugin: episodic memory backed by a Hindsight server, one bank per project",
-  "type": "module",
+  "author": "rojosinalma",
   "license": "MIT",
+  "type": "module",
   "main": "index.ts",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "ai-agents",
+    "memory",
+    "hindsight",
+    "rag"
+  ],
+  "homepage": "https://github.com/rojosinalma/opencode-hindsight",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rojosinalma/opencode-hindsight"
+  },
   "devDependencies": {
-    "@opencode/plugin": "latest"
+    "@opencode/plugin": "2.0.30"
   }
 }
