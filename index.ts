@@ -12,17 +12,17 @@
 // `plugins[].options` in opencode.jsonc (snake_case keys, see resolveOptions), with
 // HINDSIGHT_URL / HINDSIGHT_API_TOKEN / HINDSIGHT_TOKEN as env fallbacks.
 //
-// Type-only import: Bun resolves bare specifiers from the symlink's real path, where no
-// node_modules exists. Everything else is a Bun/Node builtin for the same reason.
+// `@opencode/plugin` is imported as types only and everything else is a Bun/Node builtin, so
+// the plugin directory needs no node_modules of its own.
 import type { Plugin } from "@opencode/plugin"
 import { homedir } from "node:os"
 import { basename, isAbsolute, join, relative, sep } from "node:path"
 
-type Options = {
+export type Options = {
   url: string
   token?: string
   bankPrefix: string
-  projectsRoot: string
+  projectsRoot?: string
   recallBudget: "low" | "mid" | "high"
   recallMaxTokens: number
   minRerankerScore: number
@@ -51,7 +51,7 @@ const DEFAULTS: Omit<Options, "url" | "token" | "projectsRoot"> = {
   debug: false,
 }
 
-// Sessions tracked per instance. Entries are tiny and re-derivable; the cap only guards
+// Sessions tracked per instance. Entries are small and re-derivable; the cap only guards
 // against a long-lived server accumulating ids.
 const MAX_SESSIONS = 200
 
@@ -92,7 +92,7 @@ function unresolved(value: string): boolean {
   return /^\{env:[^}]*\}$/.test(value)
 }
 
-function resolveOptions(raw: Readonly<Record<string, any>>, warn: (message: string) => void): Options {
+export function resolveOptions(raw: Readonly<Record<string, any>> = {}, warn: (message: string) => void = () => {}): Options {
   const budget = str(raw.recall_budget) as Options["recallBudget"]
   let token = str(raw.token)
   if (unresolved(token)) {
@@ -104,7 +104,7 @@ function resolveOptions(raw: Readonly<Record<string, any>>, warn: (message: stri
     url: (str(raw.url) || str(process.env["HINDSIGHT_URL"])).replace(/\/+$/, ""),
     token: token || undefined,
     bankPrefix: str(raw.bank_prefix) || DEFAULTS.bankPrefix,
-    projectsRoot: expandHome(str(raw.projects_root) || join(homedir(), "dev")),
+    projectsRoot: str(raw.projects_root) ? expandHome(str(raw.projects_root)) : undefined,
     recallBudget: ["low", "mid", "high"].includes(budget) ? budget : DEFAULTS.recallBudget,
     recallMaxTokens: num(raw.recall_max_tokens, DEFAULTS.recallMaxTokens),
     minRerankerScore: num(raw.min_reranker_score, DEFAULTS.minRerankerScore),
@@ -127,13 +127,14 @@ function projectUnder(root: string, dir: string): string | undefined {
   return rel.split(sep)[0] || undefined
 }
 
-// Project key for a location. A directory anywhere under the projects root (~/dev by
-// default) maps to the project it sits in, so a session rooted in a nested dir (openchamber
-// runs them from <project>/data/config/chats/<date>/session-<id>/) still shares the project
-// bank. Otherwise: the git root's basename, else the directory's.
-function scopeOf(projectsRoot: string, projectDirectory: string, directory: string): string {
-  const nested = projectUnder(projectsRoot, directory) ?? projectUnder(projectsRoot, projectDirectory)
-  if (nested) return nested
+// Project key for a location. With `projects_root` set, a directory anywhere under it maps to
+// the project it sits in, so a session rooted in a nested directory of the project still shares
+// the project bank. Otherwise: the git root's basename, else the directory's.
+export function scopeOf(projectsRoot: string | undefined, projectDirectory: string, directory: string): string {
+  if (projectsRoot) {
+    const nested = projectUnder(projectsRoot, directory) ?? projectUnder(projectsRoot, projectDirectory)
+    if (nested) return nested
+  }
   const fromProject = basename(projectDirectory || "")
   if (fromProject && fromProject !== "/") return fromProject
   return basename(directory || "") || "global"
