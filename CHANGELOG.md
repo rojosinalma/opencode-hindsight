@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
+### Added
+
+- `inject` option (`always` / `on_demand` / `never`, default `always`): `on_demand` injects
+  nothing and makes no per-prompt recall while retain keeps running, for models whose prefix cache
+  a changing system prompt would invalidate; `never` also stops the automatic retain. The tools
+  stay available in every mode; an unknown value warns and falls back to `always`.
+- `inject_models` option: a list of `provider/model` ids (array or comma-separated string,
+  `provider/*` for a whole provider) that get the block in `always` and `on_demand`; unlisted
+  models do not.
+- `debug: true` logs `injection skipped for <session> (<mode>, <provider>/<model>)` when a request
+  is not injected.
+
+### Changed
+
+- The `hindsight_recall` description tells the agent to look things up itself when injection is
+  off.
+- The startup line `active for …` states the inject mode.
+
 ## [0.1.0] - 2026-10-16
 
 First release.
@@ -33,5 +53,6 @@ First release.
 
 - Licence is AGPL-3.0-only (the unreleased history was MIT).
 
-[Unreleased]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rojosinalma/opencode-hindsight/releases/tag/v0.1.0

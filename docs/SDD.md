@@ -11,7 +11,7 @@ the glue between OpenCode's plugin hooks and Hindsight's HTTP API.
 ## Architecture
 
 One file, `index.ts`, exporting the plugin object (`id: "hindsight"`) plus the pure functions
-`resolveOptions` and `scopeOf` for tests.
+`resolveOptions`, `scopeOf` and `shouldInject` for tests.
 
 Components inside it:
 
@@ -56,7 +56,9 @@ OpenCode ──prompt hook────────▶ record prompt (query)
 ## Key flows
 
 1. **Recall per prompt.** `session.hook("prompt")` stores the head of the prompt
-   (`recall_query_max_chars`). `session.hook("context")` calls `recallBlock(sessionID)`: if the
+   (`recall_query_max_chars`). `session.hook("context")` first checks
+   `shouldInject(opts, event.model)` (`inject` mode and `inject_models` filter) and returns without
+   a request when the block is not wanted. Otherwise it calls `recallBlock(sessionID)`: if the
    cached block belongs to the current prompt it is reused, otherwise one recall request runs and
    its promise is cached, so every step of the turn (tool-call rounds) shares one request and gets
    an identical block — which keeps the provider's prompt cache warm. An empty result injects
@@ -67,7 +69,8 @@ OpenCode ──prompt hook────────▶ record prompt (query)
    with `async: true`, then advances the cursor in memory and storage. A `busy` flag coalesces
    overlapping calls.
 3. **Compaction.** `session.hook("compaction")` retains first (so nothing is lost when the
-   transcript is summarised), then injects the recall block into the compaction prompt.
+   transcript is summarised), then injects the recall block into the compaction prompt, under the
+   same `shouldInject` check.
 4. **Tools.** `hindsight_recall` (budget selectable, 2000-token cap), `hindsight_reflect` (prose
    answer, long timeout), `hindsight_retain` (explicit note, 20 000-char cap). All report errors as
    tool content, never as thrown exceptions.
@@ -84,6 +87,11 @@ All keys in `docs/configuration.md`. Defaults are the `DEFAULTS` constant; `url`
   Memory must never cost a turn.
 - **One recall per prompt, cached across steps.** A fresh recall per step would change the system
   prompt between tool rounds and invalidate the provider's prompt cache.
+- **Injection is optional per model.** Even cached per prompt, the block changes every turn and sits
+  before the conversation, so a server with a prefix cache re-prefills everything after the system
+  prompt on every turn. `inject: on_demand` and `inject_models` turn the block off where that cost
+  matters and leave the agent the tools to recall itself; when the block is not injected the recall
+  request is skipped entirely, not just its output.
 - **Transcript text only.** Tool outputs and reasoning are dropped before retaining: Hindsight
   extracts facts from what was said and decided, not from file dumps, and the slice stays small.
 - **Cursor in plugin storage, not in the bank.** Cheap, local, and it makes a plugin reload
@@ -105,8 +113,9 @@ are the current boundaries, not a ceiling.
 ## Operations
 
 - **Logs**: `[hindsight] …` on OpenCode's stderr. Startup prints `active for <project> (bank …) at
-  <url>, token set|none`; every retain prints size, reason, duration and the Hindsight operation
-  id; failures print the reason. `debug: true` adds the injected block and recall timings.
+  <url>, token set|none, inject <mode>`; every retain prints size, reason, duration and the
+  Hindsight operation id; failures print the reason. `debug: true` adds the injected block, recall
+  timings and `injection skipped …` for requests that get no block.
 - **Health**: no endpoint of its own; a dead server shows up as `recall failed … timeout` lines
   and nothing injected. Check the Hindsight server directly.
 - **Upgrade**: `git pull` in the plugin directory, then start a new session (plugins load per

@@ -13,6 +13,15 @@ Every log line is prefixed `[hindsight]` and goes to OpenCode's stderr/log.
 - `recall failed for <session> (… ms): timeout`: raise `recall_timeout_ms`. A dead or slow server
   costs one log line per failure and never blocks the turn.
 
+## No `## Episodic memory` block although the server is up
+
+- Check `inject` and `inject_models` (see `configuration.md` → Injection modes): `on_demand` and
+  `never` inject nothing, and a non-empty `inject_models` drops the block for every model not on
+  the list. The startup line `active for … inject <mode>` shows the mode in effect.
+- With `debug: true`, each request that is not injected logs
+  `injection skipped for <session> (<mode>, <provider>/<model>)`, so you can see which model id
+  to add to `inject_models`.
+
 ## Token problems
 
 - `token {env:HINDSIGHT_API_TOKEN} was not substituted by opencode`: the variable was unset when

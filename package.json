@@ -1,6 +1,6 @@
 {
   "name": "opencode-hindsight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin: episodic memory backed by a Hindsight server, one bank per project",
   "author": "rojosinalma",
   "license": "AGPL-3.0-only",

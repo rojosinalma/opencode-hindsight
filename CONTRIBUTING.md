@@ -26,7 +26,9 @@ bun test
 
 `test/scope.test.ts` covers the pure functions: option resolution (defaults, coercion, env
 fallbacks, the unsubstituted `{env:…}` guard) and the project key (`scopeOf`) with and without
-`projects_root`. Hook behaviour is verified against a running server. CI runs the same suite on
+`projects_root`. `test/inject.test.ts` covers the injection modes: the `shouldInject` matrix and
+`plugin.setup` against a fake context with a stubbed `fetch`, one test per mode. Everything else
+about hook behaviour is verified against a running server. CI runs the same suite on
 every push and pull request (`.github/workflows/run-tests.yml`).
 
 ## Code style and layout

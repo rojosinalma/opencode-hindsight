@@ -62,6 +62,11 @@ block is omitted when nothing ranks. Ask the agent to "remember" something and i
 matters most is `min_reranker_score`: lower it to inject more, raise it to cut noise. Set
 `"debug": true` to see the injected block in OpenCode's log.
 
+When the model's prompt cache matters (local servers with a prefix cache re-prefill from the
+system prompt whenever the block changes), set `"inject": "on_demand"`: nothing is injected, retain
+keeps running and the agent looks things up with `hindsight_recall` itself. `inject_models` keeps
+the block for the models you list, for example `["anthropic/*"]` alongside `on_demand`.
+
 ## Development
 
 ```sh

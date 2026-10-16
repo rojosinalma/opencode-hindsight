@@ -387,17 +387,24 @@ const plugin: Plugin.Plugin = {
       state(event.sessionID).prompt = text.slice(0, opts.recallQueryMaxChars)
     })
 
+    // Skipping the injection skips the recall request too; the prompt hook still tracks the
+    // session so the end-of-turn retain finds it.
+    const inject = async (id: string, model: { providerID: string; id: string }, system: { type: "text"; text: string }[]) => {
+      if (!shouldInject(opts, model)) {
+        debug(`injection skipped for ${id} (${opts.inject}, ${model.providerID}/${model.id})`)
+        return
+      }
+      const text = await recallBlock(id)
+      if (text) system.push({ type: "text", text })
+    }
+
     await ctx.session.hook("context", async (event) => {
-      if (!shouldInject(opts, event.model)) return
-      const text = await recallBlock(event.sessionID)
-      if (text) event.system.push({ type: "text", text })
+      await inject(event.sessionID, event.model, event.system)
     })
 
     await ctx.session.hook("compaction", async (event) => {
       if (retainsAutomatically(opts)) await retain(event.sessionID, "compaction")
-      if (!shouldInject(opts, event.model)) return
-      const text = await recallBlock(event.sessionID)
-      if (text) event.system.push({ type: "text", text })
+      await inject(event.sessionID, event.model, event.system)
     })
 
     await ctx.tool.transform((editor) => {
@@ -406,7 +413,11 @@ const plugin: Plugin.Plugin = {
         description:
           "Search this project's episodic memory (Hindsight) for facts from earlier sessions:" +
           " decisions, fixes, conventions, failed attempts. Fast (<1 s). Use when the user refers" +
-          " to something decided or done before that is not in the current context.",
+          " to something decided or done before that is not in the current context." +
+          (opts.inject === "always"
+            ? ""
+            : " Nothing is injected automatically in this configuration, so call this at the start" +
+              " of work that may have history in this project."),
         input: {
           type: "object",
           properties: {
@@ -511,7 +522,7 @@ const plugin: Plugin.Plugin = {
             if (s) s.title = event.data.title
             continue
           }
-          if (event.type === "session.execution.succeeded") {
+          if (event.type === "session.execution.succeeded" && retainsAutomatically(opts)) {
             const id = event.data.sessionID
             if (sessions.has(id)) void retain(id, "turn")
           }
@@ -521,7 +532,8 @@ const plugin: Plugin.Plugin = {
       }
     })()
 
-    log(`active for ${project} (bank ${bank}) at ${opts.url}, token ${opts.token ? "set" : "none"}`)
+    const models = opts.injectModels.length ? ` for ${opts.injectModels.join(", ")}` : ""
+    log(`active for ${project} (bank ${bank}) at ${opts.url}, token ${opts.token ? "set" : "none"}, inject ${opts.inject}${models}`)
     return () => controller.abort()
   },
 }
