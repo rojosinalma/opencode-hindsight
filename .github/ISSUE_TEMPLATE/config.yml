@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/rojosinalma/opencode-hindsight/security/advisories/new
+    about: Report security issues privately — never in a public issue.
+  - name: OpenCode plugin API
+    url: https://opencode.ai/docs/plugins
+    about: Questions about the plugin API itself belong to OpenCode's documentation and tracker.

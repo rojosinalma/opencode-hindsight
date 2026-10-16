@@ -1,0 +1,56 @@
+name: Bug report
+description: The plugin does not behave as documented
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report. Redact the Hindsight URL and bearer token from anything you paste.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: The release tag or commit you run (`git -C ~/.config/opencode/plugins/hindsight describe --tags`).
+      placeholder: v0.1.1
+    validations:
+      required: true
+  - type: input
+    id: opencode
+    attributes:
+      label: OpenCode and Bun versions
+      placeholder: opencode 2.0.30, bun 1.4.2
+    validations:
+      required: true
+  - type: input
+    id: hindsight
+    attributes:
+      label: Hindsight server version
+      description: From `GET /version` on the server (`api_version`).
+      placeholder: 0.10.2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Set `min_reranker_score` to 0
+        2. Start a session in a project with earlier conversations
+        3. …
+  - type: textarea
+    id: config
+    attributes:
+      label: Plugin options
+      description: The `plugins[]` entry from `opencode.jsonc`, token replaced by a placeholder.
+      render: jsonc
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: "The `[hindsight]` lines from OpenCode's log (`debug: true` prints the injected block)."
+      render: text

@@ -43,13 +43,27 @@ every push and pull request (`.github/workflows/run-tests.yml`).
 ## Commits and PRs
 
 Plain, descriptive commit messages in the imperative ("Add retain cursor to plugin storage").
-One logical change per commit. Open a pull request against `main`; `run-tests` must be green.
+One logical change per commit, every commit GPG-signed (`git config commit.gpgsign true`). Open a
+pull request against `main`; `run-tests` must be green before it merges.
 
 ## Documentation
 
-- `README.md` — what it is, requirements, setup, licence. Nothing else.
+- `README.md` — what it is, requirements, installation, usage, development, licence. Nothing else.
 - `docs/configuration.md` — every option, the project key, tuning.
 - `docs/SDD.md` — design: architecture, data model, flows, decisions, operations.
 - `docs/troubleshooting.md` — symptoms, log lines and fixes.
+- `CHANGELOG.md` — Keep a Changelog; add your change under `Unreleased`.
+- `SECURITY.md`, `CODE_OF_CONDUCT.md` — reporting path and conduct.
 
-A change in behaviour updates the matching doc in the same commit.
+A change in behaviour updates the matching doc and the changelog in the same commit.
+
+## Releasing
+
+Bump `version` in `package.json`, move the `Unreleased` section of `CHANGELOG.md` under the new
+version, commit, then create a signed tag and a GitHub release whose notes are that section:
+
+```sh
+git tag -s vX.Y.Z -m vX.Y.Z
+git push --follow-tags
+gh release create vX.Y.Z --title "opencode-hindsight X.Y.Z" --notes-file <section>
+```
