@@ -2,7 +2,10 @@
 //
 // Per project (bank `${bank_prefix}::${project}`) it
 //   1. recalls memories relevant to the latest user prompt and injects them into the
-//      system prompt (`## Episodic memory (Hindsight)`), once per prompt;
+//      system prompt (`## Episodic memory (Hindsight)`), once per prompt; `inject` turns
+//      this off ("on_demand": tools only, "never": tools only and no automatic retain) and
+//      `inject_models` limits it to listed models, since a block that changes every turn
+//      ahead of the conversation defeats prefix caching on local servers;
 //   2. retains the new part of the transcript at the end of every turn (and before a
 //      compaction) as an appended conversation document, fire-and-forget;
 //   3. exposes hindsight_recall / hindsight_reflect / hindsight_retain tools.
@@ -32,11 +35,15 @@ export type Options = {
   retainMinChars: number
   retainMaxChars: number
   recallQueryMaxChars: number
+  inject: "always" | "on_demand" | "never"
+  injectModels: string[]
   enabled: boolean
   debug: boolean
 }
 
-const DEFAULTS: Omit<Options, "url" | "token" | "projectsRoot"> = {
+const INJECT_MODES: readonly Options["inject"][] = Object.freeze(["always", "on_demand", "never"])
+
+const DEFAULTS: Omit<Options, "url" | "token" | "projectsRoot" | "injectModels"> = {
   bankPrefix: "opencode",
   recallBudget: "low",
   recallMaxTokens: 800,
@@ -47,6 +54,7 @@ const DEFAULTS: Omit<Options, "url" | "token" | "projectsRoot"> = {
   retainMinChars: 200,
   retainMaxChars: 6000,
   recallQueryMaxChars: 500,
+  inject: "always",
   enabled: true,
   debug: false,
 }
@@ -82,6 +90,11 @@ function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : ""
 }
 
+function list(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : []
+  return items.map(str).filter(Boolean)
+}
+
 function expandHome(p: string): string {
   return p === "~" || p.startsWith("~/") ? join(homedir(), p.slice(1)) : p
 }
@@ -100,6 +113,11 @@ export function resolveOptions(raw: Readonly<Record<string, any>> = {}, warn: (m
     token = ""
   }
   token ||= str(process.env["HINDSIGHT_API_TOKEN"]) || str(process.env["HINDSIGHT_TOKEN"])
+  let inject = (str(raw.inject) || DEFAULTS.inject) as Options["inject"]
+  if (!INJECT_MODES.includes(inject)) {
+    warn(`inject "${inject}" is not always|on_demand|never; using always`)
+    inject = DEFAULTS.inject
+  }
   return {
     url: (str(raw.url) || str(process.env["HINDSIGHT_URL"])).replace(/\/+$/, ""),
     token: token || undefined,
@@ -114,9 +132,24 @@ export function resolveOptions(raw: Readonly<Record<string, any>> = {}, warn: (m
     retainMinChars: num(raw.retain_min_chars, DEFAULTS.retainMinChars),
     retainMaxChars: num(raw.retain_max_chars, DEFAULTS.retainMaxChars),
     recallQueryMaxChars: num(raw.recall_query_max_chars, DEFAULTS.recallQueryMaxChars),
+    inject,
+    injectModels: list(raw.inject_models),
     enabled: raw.enabled !== false && raw.enabled !== "false",
     debug: raw.debug === true || raw.debug === "true",
   }
+}
+
+// `inject_models` entries are `providerID/modelID`; `providerID/*` matches every model of that
+// provider. A non-empty list filters both "always" and "on_demand".
+export function shouldInject(opts: Options, model: { providerID: string; id: string } | undefined): boolean {
+  if (opts.inject === "never") return false
+  if (!opts.injectModels.length) return opts.inject === "always"
+  if (!model) return false
+  return opts.injectModels.includes(`${model.providerID}/${model.id}`) || opts.injectModels.includes(`${model.providerID}/*`)
+}
+
+export function retainsAutomatically(opts: Options): boolean {
+  return opts.inject !== "never"
 }
 
 // First path segment below `root` when `dir` lies under it, else undefined.
@@ -355,12 +388,14 @@ const plugin: Plugin.Plugin = {
     })
 
     await ctx.session.hook("context", async (event) => {
+      if (!shouldInject(opts, event.model)) return
       const text = await recallBlock(event.sessionID)
       if (text) event.system.push({ type: "text", text })
     })
 
     await ctx.session.hook("compaction", async (event) => {
-      await retain(event.sessionID, "compaction")
+      if (retainsAutomatically(opts)) await retain(event.sessionID, "compaction")
+      if (!shouldInject(opts, event.model)) return
       const text = await recallBlock(event.sessionID)
       if (text) event.system.push({ type: "text", text })
     })
