@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-03
+
+### Deprecated
+
+- The project is archived and no longer maintained. Use the official Hindsight plugin,
+  [`@vectorize-io/hindsight-coding-agents`](https://www.npmjs.com/package/@vectorize-io/hindsight-coding-agents),
+  instead. 0.2.0 is the last working version; this release changes no code.
+
 ## [0.2.0] - 2026-10-16
 
 ### Added
@@ -53,6 +61,7 @@ First release.
 
 - Licence is AGPL-3.0-only (the unreleased history was MIT).
 
-[Unreleased]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/rojosinalma/opencode-hindsight/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rojosinalma/opencode-hindsight/releases/tag/v0.1.0

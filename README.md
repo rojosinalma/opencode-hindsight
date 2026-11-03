@@ -1,5 +1,12 @@
 # opencode-hindsight
 
+> [!IMPORTANT]
+> **This repository is archived and no longer maintained.** It is replaced by the official
+> Hindsight plugin, [`@vectorize-io/hindsight-coding-agents`](https://www.npmjs.com/package/@vectorize-io/hindsight-coding-agents)
+> ([docs](https://hindsight.vectorize.io/sdks/integrations/coding-agents)), which covers OpenCode 2
+> and other coding agents. The last working version of this plugin is
+> [0.2.0](https://github.com/rojosinalma/opencode-hindsight/releases/tag/v0.2.0); 0.2.1 only adds this notice.
+
 [![run-tests](https://github.com/rojosinalma/opencode-hindsight/actions/workflows/run-tests.yml/badge.svg)](https://github.com/rojosinalma/opencode-hindsight/actions/workflows/run-tests.yml)
 [![release](https://img.shields.io/github/v/release/rojosinalma/opencode-hindsight)](https://github.com/rojosinalma/opencode-hindsight/releases)
 [![license](https://img.shields.io/github/license/rojosinalma/opencode-hindsight)](LICENSE)
